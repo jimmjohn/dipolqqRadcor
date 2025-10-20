@@ -130,6 +130,7 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
     double Gz_4 = pow(Gz_, 4);
     double Gz_2 = pow(Gz_, 2);
     double gam4 = pow(gam, 4);
+    double gam3 = pow(gam, 3);
     double gam2 = pow(gam, 2);
     double m4   = pow(m, 4);
     double m2   = pow(m, 2);
@@ -171,8 +172,8 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
             vi = -0.5 -2.0 * Qi * sw2 * K1;  // is function for lepton
             ai = -0.5;
             Fvivf = GMu_ * Mz_2 / (alpha_ * sqrt(2.0) * 8.0*pi_) *
-                    (m_sw2*(1.0-m_sw2))*16.;
-            Fvivf = Fvivf * (m_sw2/(1.0-m_sw2)) //! why this factor? Because  vi ai couplings in KKMC
+                    (sw2*(1.0-sw2))*16.;
+            Fvivf = Fvivf * (sw2/(1.0-sw2)) //! why this factor? Because  vi ai couplings in KKMC
                  // are divided by deno= 4 sqrt(m_swsq*(1d0-m_swsq)) in addition multiplied by 2 and we are not using it here
                  // Ve = (2*T3e -4*Qe*m_swsq)/deno and Ae = 2*T3e/deno.
         }
@@ -199,151 +200,337 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
 
     // CONTRIBUTIONS IN STANDARD MODEL FOR ALL DIPOLE MOMENTS ZERO
 
-    RSM[0][0] = ((-16.0*a0_4*f4*gam4*(-1.0+gam2)*m4
-                + 32.0*a0_2*f4*gam4*m4*v0_2
-                + (1.0+gam2)*(e4*Mz_4
-                + 16.0*gam4*m4*pow(e2+f2*v0_2,2)
-                + Mz_2*(e4*(Gz_2-8.0*gam2*m2)-8.0*e2*f2*gam2*m2*v0_2)))
-                *sth2)
-                /(4.0*gam2*denom);
+    // Mostly appearing terms are pre-calculated to reduce the compiler overhead
+    double Qi2 = pow(Qi, 2);
+    double Qf2 = pow(Qf, 2);
+    double ai2 = pow(ai, 2);
+    double af2 = pow(af, 2);
+    std::complex<double> vi2 = vi * vi;
+    std::complex<double> vf2 = vf * vf;
 
-    RSM[0][1] = (-2.0*a0_*e2*f2*gam2*Gz_*m2*Mz_*V*v0_*sth2)/denom;
+    double PgC = std::conj(Pg);
+    double PzC = std::conj(Pz);
+    double viC = std::conj(vi);
+    double aiC = std::conj(ai);
+    double vfC = std::conj(vf);
+
+
+    RSM[0][0] = 4.0*gam2*m4 * std::real(e2*(1.0 + gam2)*Qf*Qi*
+      ((e2*Pg*Qf*Qi + f2*Pz*vf*vi) * std::conj(Pg))
+    + f2*std::conj(Pz) *
+      ( -(af2*f2*(-1.0 + gam2)*Pz*(ai2 + vi*std::conj(vi))) +
+        (1.0 + gam2)*std::conj(vf) *
+          ( ai2*f2*Pz*vf +
+            (e2*Pg*Qf*Qi + f2*Pz*vf*vi) * std::conj(vi) )
+      )
+    ) * sth2;
+
+    RSM[0][1] = 4.0 * af * f2 * gam4 * m4 * V *
+    std::imag(e2 * Pz * Qf * Qi * vi * std::conj(Pg)
+        + std::conj(Pz) * (-(ai2 * f2 * Pz * vf)
+            - (e2*Pg*Qf*Qi + f2*Pz*vf*vi) * std::conj(vi)
+            + f2 * Pz * std::conj(vf) * (ai2 + vi*std::conj(vi))
+        )
+    ) * sth2;
 
     RSM[1][0] = RSM[0][1];
 
-    RSM[1][1] = -((-1.0 + gam2)*(-16.0*a0_4*f4*gam4*m4
-                + e4*Mz_4 + 16.0*gam4*m4*pow(e2 + f2*v0_2,2)
-                + Mz_2*(e4*(Gz_2 - 8.0*gam2*m2)
-                - 8.0*e2*f2*gam2*m2*v0_2))*sth2)
-                / (4.0*gam2*denom);
+    RSM[1][1] = 4.0 * gam2 * (-1.0 + gam2) * m4 *
+    std::real(-( e2 * Qf * Qi * ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi ) * std::conj(Pg) )
+        + std::conj(Pz) * ( af2 * f4 * Pz * ( ai2 + vi * std::conj(vi) )
+        - f2 * std::conj(vf) * (
+                ai2 * f2 * Pz * vf
+            + ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi ) * std::conj(vi)
+            )
+        )
+    ) * sth2;
 
-    RSM[0][2] = ((e4*Mz_4 + 16.0*gam4*m4*pow(e2+f2*v0_2,2)
-                + Mz_2*(e4*(Gz_2-8.0*gam2*m2)
-                - 8.0*e2*f2*gam2*m2*v0_2))*cth
-                + 4.0*a0_2*f2*gam2*m2*(-(e2*Mz_2*V)
-                + 4.0*gam2*m2*(e2*V + f2*v0_2*(2.0*V+cth))))*sth
-                / (2.0*gam*denom);
+
+    RSM[0][2] = 4.0 * (gam2*gam) * m4 *
+    std::real( e2 * Qf * Qi * std::conj(Pg) *
+        ( af * ai * f2 * Pz * V
+            - 2.0 * gam2 * (-1.0 + V*V)
+            * ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi ) * cth )
+        +  f2 * std::conj(Pz) *
+           ( af * ( ai * V * ( e2 * Pg * Qf * Qi
+                            + f2 * Pz * vf * ( vi + std::conj(vi) ) )
+                + 2.0 * af * f2 * Pz * ( 1.0 + gam2 * (-1.0 + V2) )
+                * ( ai2 + vi * std::conj(vi) ) * cth )
+        +
+        std::conj(vf) * (
+            ai * f2 * Pz * ( af * V * vi
+                            - 2.0 * ai * gam2 * (-1.0 + V2) * vf * cth )
+            +
+            std::conj(vi) * ( af * ai * f2 * Pz * V
+                            - 2.0 * gam2 * (-1.0 + V2)
+                                * ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi )
+                                * cth )
+        )
+        )
+    ) * sth;
 
     RSM[2][0] = RSM[0][2];
 
-    RSM[1][2] = (-a0_*e2*f2*gam*Gz_*m2*Mz_*V*v0_*s2th)/denom;
+    RSM[1][2] = 2.0 * af * f2 * (gam3) * m4 * V *
+    std::imag( e2 * Pz * Qf * Qi * vi * std::conj(Pg)
+        + std::conj(Pz) * ( -(ai2 * f2 * Pz * vf)
+            - (e2*Pg*Qf*Qi + f2*Pz*vf*vi) * std::conj(vi)
+            + f2 * Pz * std::conj(vf) * (ai2 + vi*std::conj(vi))
+        )
+    ) * s2th;
 
     RSM[2][1] = RSM[1][2];
 
-    RSM[2][2] = (8.0*a0_4*f4*gam4*(-1.0+gam2)*m4*(3.0+c2th)
-                + ((e4*Mz_4 + 16.0*gam4*m4*pow(e2+f2*v0_2,2)
-                + Mz_2*(e4*(Gz_2-8.0*gam2*m2)
-                - 8.0*e2*f2*gam2*m2*v0_2))
-                *(-1.0+3.0*gam2+(1.0+gam2)*c2th))/2.0
-                + 16.0*a0_2*f2*gam4*m2*(-(e2*Mz_2*V*cth)
-                + m2*(4.0*e2*gam2*V*cth
-                + f2*v0_2*(-2.0+3.0*gam2+8.0*gam2*V*cth+gam2*c2th))))
-                /(4.0*gam2*denom);
+    RSM[2][2] = 2.0 * gam2 * m4 *
+    std::real( -( e4 * Pg * (Qf2) * (Qi2) * std::conj(Pg) *
+        ( 1.0 - 3.0*gam2
+            + ( -1.0 + 3.0*gam2 + 4.0*gam4 * (-1.0 + V2) ) * c2th ) )
+        - e2 * f2 * Qf * Qi * ( Pz * std::conj(Pg) *
+            ( -4.0*af*ai*gam2*V*cth
+                + vf*vi * ( 1.0 - 3.0*gam2
+                            + ( -1.0 + 3.0*gam2 + 4.0*gam4 * (-1.0 + V2) )
+                            * c2th ) )
+        + Pg * std::conj(Pz) *
+            ( -4.0*af*ai*gam2*V*cth
+                + std::conj(vf)*std::conj(vi) *
+                ( 1.0 - 3.0*gam2
+                    + ( -1.0 + 3.0*gam2 + 4.0*gam4 * (-1.0 + V2) )
+                    * c2th ) ) )
+        + f4 * Pz * std::conj(Pz) * (
+            af * ( 4.0*ai*gam2*V*vf * ( vi + std::conj(vi) ) * cth
+                + af * ( ai2 + vi*std::conj(vi) ) *
+                    ( 1.0 + gam2 * ( -1.0 + 4.0*V2 )
+                    + ( -1.0 + 5.0*gam2 + 4.0*gam4 * ( -1.0 + V2 ) )
+                        * c2th ) )
+        + std::conj(vf) * (
+                std::conj(vi) * ( 4.0*af*ai*gam2*V*cth
+                                + vf*vi * ( -1.0 + 3.0*gam2
+                                    + ( 1.0 - 3.0*gam2 - 4.0*gam4 * ( -1.0 + V2 ) )
+                                    * c2th ) )
+            + ai * ( 4.0*af*gam2*V*vi*cth
+                    - ai*vf * ( 1.0 - 3.0*gam2
+                        + ( -1.0 + 3.0*gam2 + 4.0*gam4 * ( -1.0 + V2 ) )
+                        * c2th ) )
+            )
+        )
+    );
 
-    RSM[0][3] = (-2.0*a0_*f2*gam*m2*v0_
-                *(4.0*a0_2*f2*gam2*m2*V*cth
-                + (-(e2*Mz_2) + 4.0*gam2*m2*(e2 + f2*v0_2))
-                *(2.0 + V*cth))*sth)/denom;
+
+    RSM[0][3] = -4.0 * f2 * (gam3) * m4 *
+    std::real( e2 * Pz * Qf * Qi * std::conj(Pg) *
+        ( 2.0*ai*vf + af*V*vi*cth )
+        + std::conj(Pz) * ( af*V *
+            ( ai2 * f2 * Pz * vf
+                + ( e2*Pg*Qf*Qi + f2*Pz*vf*vi ) * std::conj(vi) )
+            * cth
+        + std::conj(vf) *
+            ( 2.0*ai * ( e2*Pg*Qf*Qi + f2*Pz*vf*( vi + std::conj(vi) ) )
+                + af * f2 * Pz * V * ( ai2 + vi*std::conj(vi) ) * cth )
+        )
+    ) * sth;
 
     RSM[3][0] = RSM[0][3];
 
-    RSM[1][3] = (2.0*a0_2*e2*f2*gam*Gz_*m2*Mz_*V*sth)/denom;
+    RSM[1][3] = -4.0 * af * ai * f2 * gam3 * m4 * V *
+    std::imag( e2 * Pz * Qf * Qi * std::conj(Pg)
+        + std::conj(Pz) * ( -(e2 * Pg * Qf * Qi)
+            - f2 * Pz * vf * (vi + std::conj(vi))
+            + f2 * Pz * std::conj(vf) * (vi + std::conj(vi))
+        )
+    ) * sth;
 
     RSM[3][1] = RSM[1][3];
 
-    RSM[2][3] = -((a0_*f2*gam2*m2*v0_
-                *((-(e2*Mz_2) + 4.0*gam2*m2*(e2 + f2*v0_2))
-                *(4.0*cth + V*(3.0 + c2th)) + 4.0*a0_2*f2*m2
-                *(4.0*(-1.0 + gam2)*cth + gam2*V*(3.0 + c2th))))/denom);
+    RSM[2][3] = -4.0 * f2 * gam2 * m4 *
+    std::real( e2 * gam2 * Pz * Qf * Qi * std::conj(Pg) *
+        ( 2.0*ai*vf*cth + af*V*vi*(1.0 + cth2) )
+        + (std::conj(Pz) * ( std::conj(vi) *
+          ( 4.0*af2*ai*f2 * (-1.0 + gam2) * Pz * cth
+            + 4.0*ai*f2*gam2 * Pz * vf * std::conj(vf) * cth
+            + af*gam2*V *
+                ( e2*Pg*Qf*Qi + f2*Pz*vi*( vf + std::conj(vf) ) ) *
+                ( 3.0 + c2th ) )
+        + ai * ( gam2 * std::conj(vf) *
+                ( 4.0*( e2*Pg*Qf*Qi + f2*Pz*vf*vi ) * cth
+                + af*ai*f2*Pz*V * ( 3.0 + c2th ) )
+            + af*f2*Pz *
+                ( 4.0*af*(-1.0 + gam2) * vi * cth
+                + ai*gam2*V * vf * ( 3.0 + c2th ) )
+        )
+        )
+    ) / 2.0 );
 
     RSM[3][2] = RSM[2][3];
 
-    RSM[3][3] = (e4*(1.0 + gam2 + (-1.0 + gam2)*cth2)
-                + (4.0*e2*f2*gam2*m2*(4.0*gam2*m2 - Mz_2)
-                *(4.0*a0_2*gam2*V*cth + v0_2*(1.0 + 3.0*gam2 + (-1.0 + gam2)*c2th)))
-                /denom + (8.0*f4*gam4*m4
-                *(a0_4*(-1.0 + gam2)*(3.0 + c2th) + v0_4*(1.0 + 3.0*gam2 + (-1.0 + gam2)*c2th)
-                + 2.0*a0_2*v0_2*(-1.0 + 3.0*gam2 + 8.0*gam2*V*cth + (-1.0 + gam2)*c2th)))
-                /denom) / (4.0*gam2);
-
+    RSM[3][3] = 2.0 * gam2 * m4 *
+    std::real( e4 * Pg * Qf2 * Qi2 * std::conj(Pg) *
+        ( 1.0 + 3.0*gam2 + (-1.0 + gam2) * c2th )
+        + e2 * f2 * Qf * Qi * ( Pz * std::conj(Pg) *
+            ( 4.0*af*ai*gam2*V*cth
+                + vf*vi * ( 1.0 + 3.0*gam2 + (-1.0 + gam2) * c2th ) )
+        + Pg * std::conj(Pz) *
+            ( 4.0*af*ai*gam2*V*cth
+                + std::conj(vf)*std::conj(vi) *
+                ( 1.0 + 3.0*gam2 + (-1.0 + gam2) * c2th ) ) )
+        - f4 * Pz * std::conj(Pz) *
+        ( -( af * ( 4.0*ai*gam2*V*vf * ( vi + std::conj(vi) ) * cth
+                    + af * (-1.0 + gam2) * ( ai2 + vi*std::conj(vi) )
+                    * ( 3.0 + c2th ) ) )
+        - std::conj(vf) *
+            ( ai * ( 4.0*af*gam2*V*vi*cth
+                    + ai*vf * ( 1.0 + 3.0*gam2 + (-1.0 + gam2) * c2th ) )
+            + std::conj(vi) *
+                ( 4.0*af*ai*gam2*V*cth
+                + vf*vi * ( 1.0 + 3.0*gam2 + (-1.0 + gam2) * c2th ) )
+            )
+        )
+    );
 
 
     // CONTRIBUTION LINEAR IN DIPOLE MOMENTS A, B, X, Y
 
         // RDM entries
-    RDM[0][0] = ((e2*(e2*Mz_4 + 16.0*gam4*m4*(e2 + f2*v0_2)
-                + Mz_2*(e2*(Gz_2 - 8.0*gam2*m2)
-                - 4.0*f2*gam2*m2*v0_2)) * ReA1
-                + 4.0*f2*gam2*m2*v0_*(e2*Gz_*Mz_*(-v0_*ImA1 + ImX)
-                + (4.0*a0_2*f2*gam2*m2 - e2*Mz_2
-                + 4.0*gam2*m2*(e2 + f2*v0_2)) * ReX))*sth2) / denom;
+    RDM[0][0] = 8.0 * gam4 * m4 *
+    std::real( e2 * Qf * Qi *
+        ( e2 * Pg * Qf * Qi * ( A + std::conj(A) )
+            + f2 * Pz * vi * ( X + vf * std::conj(A) ) ) * std::conj(Pg)
+        + f2 * std::conj(Pz) *
+        ( std::conj(vf) * ( ai2 * f2 * Pz * X
+                + ( A * e2 * Pg * Qf * Qi + f2 * Pz * vi * X ) * std::conj(vi) )
+            + ( ai2 * f2 * Pz * vf
+                + ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi ) * std::conj(vi) )
+            * std::conj(X) ) ) * sth2;
 
-    RDM[0][1] = (V*(e2*(e2*Mz_4
-                + 16.0*gam4*m4*(e2 + f2*v0_2)
-                + Mz_2*(e2*(Gz_2 - 8.0*gam2*m2)
-                - 4.0*f2*gam2*m2*v0_2)) * ReB
-                - 4.0*f2*gam2*m2
-                *(4.0*a0_*f2*gam2*m2*(a0_2 + v0_2) * ImX
-                + v0_*(e2*(a0_*(4.0*gam2*m2 - Mz_2) * ImA1
-                + Gz_*Mz_*(v0_*ImB - ImY + a0_*ReA1))
-                + (-4.0*a0_2*f2*gam2*m2 + e2*Mz_2
-                -4.0*gam2*m2*(e2 + f2*v0_2)) * ReY)))*sth2)/(2.0*denom);
+    RDM[0][1] = 4.0 * gam4 * m4 * V *
+    std::real( e2 * Qf * Qi *
+        ( e2 * Pg * Qf * Qi * ( B + std::conj(B) )
+            + f2 * Pz * vi * ( Y
+                            - std::complex<double>(0.0, 1.0) * af * std::conj(A)
+                            + vf * std::conj(B) ) ) * std::conj(Pg)
+        +  f2 * std::conj(Pz) *
+        ( std::conj(vf) *  ( ai2 * f2 * Pz * Y
+                + ( B * e2 * Pg * Qf * Qi + f2 * Pz * vi * Y ) * std::conj(vi) )
+            + std::complex<double>(0.0, 1.0) * af * ( std::conj(vi) *
+                    ( A * e2 * Pg * Qf * Qi
+                    + f2 * Pz * vi * ( X - std::conj(X) ) )
+                + ai2 * f2 * Pz * ( X - std::conj(X) ) )
+            + ( ai2 * f2 * Pz * vf
+                + ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi ) * std::conj(vi) )
+                * std::conj(Y) ) ) * sth2;
 
-    RDM[1][0] = -(V * (e2*(e2*Mz_4+16.0*gam4*m4*(e2+f2*v0_2)
-                + Mz_2*(e2*(Gz_2 - 8.0*gam2*m2)
-                - 4.0*f2*gam2*m2*v0_2)) * ReB
-                + 4.0*f2*gam2*m2*(4.0*a0_*f2*gam2*m2*(a0_2 + v0_2) * ImX
-                + v0_*(e2*(a0_*(4.0*gam2*m2 - Mz_2) * ImA1
-                + Gz_*Mz_*(-(v0_*ImB) + ImY + a0_*ReA1))+(4.0*a0_2*f2*gam2*m2-e2*Mz_2
-                + 4.0*gam2*m2*(e2 + f2*v0_2)) * ReY)))*sth2)/(2.0*denom);
+    RDM[1][0] =  -4.0 * gam4 * m4 * V *
+    std::real( e2 * Qf * Qi *
+        ( e2 * Pg * Qf * Qi * ( B + std::conj(B) )
+            + f2 * Pz * vi * ( Y
+                                + std::complex<double>(0.0, 1.0) * af * std::conj(A)
+                                + vf * std::conj(B) ) ) * std::conj(Pg)
+        + f2 * std::conj(Pz) *
+        ( std::conj(vf) *
+            ( ai2 * f2 * Pz * Y
+                + ( B * e2 * Pg * Qf * Qi + f2 * Pz * vi * Y ) * std::conj(vi) )
+            - std::complex<double>(0.0, 1.0) * af *  ( std::conj(vi) *
+                    ( A * e2 * Pg * Qf * Qi
+                    + f2 * Pz * vi * ( X - std::conj(X) ) )
+                + ai2 * f2 * Pz * ( X - std::conj(X) ) )
+            + ( ai2 * f2 * Pz * vf
+                + ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi ) * std::conj(vi) )
+                * std::conj(Y) ) ) * sth2;
 
     RDM[1][1] = 0.0;
 
-    RDM[0][2] = -(gam * (e2*(4.0*a0_2*f2*gam2*m2
-                *(-4.0*gam2*m2+Mz_2)*V + (-2.0 + V2) * (e2*Mz_4
-                + 16.0*gam4*m4*(e2+f2*v0_2)
-                + Mz_2*(e2*(Gz_2 - 8.0*gam2*m2)
-                - 4.0*f2*gam2*m2*v0_2)) * cth)*ReA1
-                + 4.0*f2*gam2*m2*(a0_*V*(-(e2*Mz_2)
-                + 4.0*a0_2*f2*gam2*m2*V*cth
-                + 4.0*gam2*m2*(e2+f2*v0_2*(2.0+V*cth)))*ImY
-                + v0_*((-2.0 + V*V)*(-(e2*Mz_2)+4.0*gam2*m2*(e2+f2*v0_2))*cth
-                + 4.0*a0_2*f2*gam2*m2*(-2.0*V+(-2.0+V2)*cth))*ReX
-                + e2*(a0_*(4.0*gam2*m2-Mz_2)*V*v0_*(1.0+V*cth)*ImB
-                + Gz_*Mz_*((a0_2*V-(-2.0+V2)*v0_2*cth)*ImA1
-                + v0_*((-2.0+V2)*cth*ImX + a0_*V*(1.0+V*cth)*ReB)
-                - a0_*V*ReY))))*sth)/(2.0 * denom);
+    RDM[0][2] =  4.0 * (gam4 * gam) * m4 *
+    std::real( -( e2 * Qf * Qi * std::conj(Pg) *
+        ( ( -std::complex<double>(0.0, 1.0) ) * ai * f2 * Pz * V *
+            ( Y - std::complex<double>(0.0, 1.0) * af * std::conj(A)
+                - vf * std::conj(B) )
+            + ( e2 * Pg * Qf * Qi * ( -2.0 + V2 ) * ( A + std::conj(A) )
+            + f2 * Pz * vi *
+                ( ( -2.0 + V2 ) * ( X + vf * std::conj(A) )
+                    + std::complex<double>(0.0, 1.0) * af * (V2) * std::conj(B) ))
+                    * cth ) )
+            + f2 * std::conj(Pz) *
+            ( std::conj(vf) * ( ai *
+                ( std::complex<double>(0.0, 1.0) * V *
+                    ( B * e2 * Pg * Qf * Qi + f2 * Pz * vi * Y )
+                - ai * f2 * Pz * ( -2.0 + V2 ) * X * cth )
+                + std::conj(vi) *
+                ( std::complex<double>(0.0, 1.0) * ai * f2 * Pz * V * Y
+                    - ( -2.0 + V2 ) * ( A * e2 * Pg * Qf * Qi + f2 * Pz * vi * X ) *
+                        cth ))
+            + std::conj(vi) *
+            ( ( -std::complex<double>(0.0, 1.0) ) * ai * f2 * Pz * V * vf * std::conj(Y)
+                - ( -2.0 + V2 ) * ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi ) *
+                    std::conj(X) * cth
+                + af * V *  ( ai * f2 * Pz * ( X + std::conj(X) )
+                    + std::complex<double>(0.0, 1.0) * V *
+                        ( B * e2 * Pg * Qf * Qi + f2 * Pz * vi * ( Y - std::conj(Y) ) )
+                        * cth ) )
+            + ai * ( ( -std::complex<double>(0.0, 1.0) ) * V *
+                ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi ) * std::conj(Y)
+                + ai * f2 * Pz * ( 2.0 - V2 ) * vf * std::conj(X) * cth
+                + af * V * ( A * e2 * Pg * Qf * Qi
+                    + f2 * Pz * vi * ( X + std::conj(X) )
+                    + std::complex<double>(0.0, 1.0) * ai * f2 * Pz * V
+                        * ( Y - std::conj(Y) ) * cth ) ) ) ) * sth;
 
-    RDM[2][0] = -(gam*(e2*(4.0*a0_2*f2*gam2*m2
-                *(-4.0*gam2*m2+Mz_2)*V + (-2.0+V2)*(e2*Mz_4
-                + 16.0*gam4*m4*(e2+f2*v0_2)
-                + Mz_2*(e2*(Gz_2-8.0*gam2*m2)
-                - 4.0*f2*gam2*m2*v0_2))*cth)*ReA1
-                - 4.0*f2*gam2*m2*(a0_*V*(-(e2*Mz_2)
-                + 4.0*a0_2*f2*gam2*m2*V*cth
-                + 4.0*gam2*m2*(e2+f2*v0_2*(2.0+V*cth)))*ImY
-                - v0_*((-2.0 + V2)*(-(e2*Mz_2)
-                + 4.0*gam2*m2*(e2+f2*v0_2))*cth
-                + 4.0*a0_2*f2*gam2*m2*(-2.0*V+(-2.0+V2)*cth))*ReX
-                + e2*(a0_*(4.0*gam2*m2-Mz_2)*V*v0_*(1.0+V*cth)*ImB
-                + Gz_*Mz_*((-(a0_*a0_*V)+(-2.0+V2)*v0_2*cth)*ImA1
-                + v0_*(-((-2.0+V2)*cth*ImX)+a0_*V*(1.0+V*cth)*ReB)
-                - a0_*V*ReY))))*sth)/(2.0 * denom);
+    RDM[2][0] = 4.0 * (gam4 * gam) * m4 *
+    std::real( e2 * Qf * Qi * std::conj(Pg) *
+        ( ai * f2 * Pz * V * ( af * std::conj(A)
+                                - std::complex<double>(0.0, 1.0) * ( Y - vf * std::conj(B) ) )
+            - ( e2 * Pg * Qf * Qi * ( -2.0 + V2 ) * ( A + std::conj(A) )
+                + f2 * Pz * vi * ( ( -2.0 + V2 ) * ( X + vf * std::conj(A) )
+                - std::complex<double>(0.0, 1.0) * af * (V2) * std::conj(B) ) ) * cth )
+        + f2 * std::conj(Pz) *
+        ( std::conj(vf) * (
+                -( ai * ( std::complex<double>(0.0, 1.0) * V
+                            * ( B * e2 * Pg * Qf * Qi + f2 * Pz * vi * Y )
+                        + ai * f2 * Pz * ( -2.0 + V2 ) * X * cth ) )
+                + std::conj(vi) *
+                    ( -std::complex<double>(0.0, 1.0) * ai * f2 * Pz * V * Y
+                    - ( -2.0 + V2 ) * ( A * e2 * Pg * Qf * Qi + f2 * Pz * vi * X )
+                        * cth ) )
+            + std::conj(vi) *
+            ( std::complex<double>(0.0, 1.0) * ai * f2 * Pz * V * vf * std::conj(Y)
+                - ( -2.0 + V2 ) * ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi )
+                    * std::conj(X) * cth
+                + af * V * ( ai * f2 * Pz * ( X + std::conj(X) )
+                    - std::complex<double>(0.0, 1.0) * V
+                        * ( B * e2 * Pg * Qf * Qi + f2 * Pz * vi * ( Y - std::conj(Y) ) )
+                        * cth ) )
+            +ai * ( std::complex<double>(0.0, 1.0) * V
+                * ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi ) * std::conj(Y)
+                + ai * f2 * Pz * ( 2.0 - V2 ) * vf * std::conj(X) * cth
+                + af * V * ( A * e2 * Pg * Qf * Qi
+                    + f2 * Pz * vi * ( X + std::conj(X) )
+                    - std::complex<double>(0.0, 1.0) * ai * f2 * Pz * V
+                        * ( Y - std::conj(Y) ) * cth ) ) ) ) * sth;
 
 
-//Check this one more time
-    RDM[1][2] = -(gam*V*(e2*(4.0*a0_2*f2*gam2*m2*(4.0*gam2*m2-Mz_2)*V
-                + (e2*Mz_4+16.0*gam4*m4*(e2+f2*v0_2)
-                + Mz_2*(e2*(Gz_2-8.0*gam2*m2)
-                - 4.0*f2*gam2*m2*v0_2))*cth)*ReB
-                + 4.0*f2*gam2*m2*(a0_*(-(e2*Mz_2*V)
-                + 4.0*a0_2*f2*gam2*m2*cth
-                + 4.0*gam2*m2*(e2*V+f2*v0_2*(2.0*V+cth)))*ImX
-                + e2*(a0_*(4.0*gam2*m2-Mz_2)*v0_*(V+cth)*ImA1
-                + Gz_*Mz_*(-((a0_2*V+v0_2*cth)*ImB)+v0_*(cth*ImY+a0_*(V+cth)*ReA1)
-                - a0_*V*ReX))+v0_*((-(e2*Mz_2)+4.0*gam2*m2*(e2+f2*v0_2))*cth
-                + 4.0*a0_2*f2*gam2*m2*(2.0*V+cth))*ReY))*sth)/(2.0*denom);
-
+    RDM[1][2] =  -4.0 * (gam4 * gam) * m4 * V *
+    std::imag( e2 * Qf * Qi * std::conj(Pg) *
+        ( ai * f2 * Pz * V * ( X - vf * std::conj(A)
+        + std::complex<double>(0.0, 1.0) * af * std::conj(B) )
+        + std::complex<double>(0.0, 1.0) * ( e2 * Pg * Qf * Qi * ( B + std::conj(B) )
+        + f2 * Pz * vi * ( Y + std::complex<double>(0.0, 1.0) * af * std::conj(A)
+        + vf * std::conj(B) ) ) * cth )
+        + f2 * std::conj(Pz) * ( std::conj(vf) *
+            ( ai * ( A * e2 * Pg * Qf * Qi * V + f2 * Pz * V * vi * X
+        + std::complex<double>(0.0, 1.0) * ai * f2 * Pz * Y * cth )
+        + std::conj(vi) * ( ai * f2 * Pz * V * X
+        + std::complex<double>(0.0, 1.0) * ( B * e2 * Pg * Qf * Qi + f2 * Pz * vi * Y )
+                                    * cth ) )
+        + std::complex<double>(0.0, 1.0) * ( std::conj(vi) *
+            ( std::complex<double>(0.0, 1.0) * ai * f2 * Pz * V * vf * std::conj(X)
+        + ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi ) * std::conj(Y) * cth
+        + af * ( ai * f2 * Pz * V * ( Y + std::conj(Y) )
+        - std::complex<double>(0.0, 1.0) * ( A * e2 * Pg * Qf * Qi
+        + f2 * Pz * vi * ( X - std::conj(X) ) ) * cth ) )
+        + ai * ( std::complex<double>(0.0, 1.0) * V * ( e2 * Pg * Qf * Qi + f2 * Pz * vf * vi )
+                        * std::conj(X)
+        + ai * f2 * Pz * vf * std::conj(Y) * cth
+        + af * ( V * ( B * e2 * Pg * Qf * Qi + f2 * Pz * vi * ( Y + std::conj(Y) ) )
+        - std::complex<double>(0.0, 1.0) * ai * f2 * Pz * ( X - std::conj(X) )
+                                    * cth ) ) ) ) ) * sth;
 
 
     RDM[2][1] = (gam*V*(e2*(4.0*a0_2*f2*gam2*m2
