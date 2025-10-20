@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
+#include "KKdizet.h"
 
 DipoleQQRijRadCor::DipoleQQRijRadCor(int iqed_enabled)
     : iqed_(iqed_enabled)
@@ -25,11 +26,12 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
 
     std::complex<double>  A, B, X, Y, Pg, Pz, Den, vi, vf;
     std::complex<double>  K1, K2, K3, K11, K12, K13, Gammavp, Rho11, Rho12, Rho13;
-    std::complex<double>  GSW[100];
+    std::complex<double>  GSW[100] {};
+    double re[100]{}, im[100]{};
     double Svar, CosThetaD;
     std::complex<double>  RhoEW, VPgamma, CorEle, CorFin, CorEleFin, VVCef;
-    int KFf, IfGSW, KeyElw, IfPrint;
-
+    double Qi, Qf, ai, af, sw2, sw, cw2, cw, t, Fvivf;
+    int KFi, KFf, IfGSW, KeyElw, IfPrint;
 
 
     if(iqed_>=5) {
@@ -43,10 +45,61 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
     double s2th = sin(2.0 * theta);
     double c2th = cos(2.0 * theta);
 
+
+    //Setting the electroweak corrections using KKdizet class.
+    // The dizet table from dizet6.45 is copied from the workMini to the
+    // dizet folder before running this code.
+    // The dizet table contain four different energy ranges:
+    // LEP1 low energies, LEP1 around Z, LEP2, NLC/LHC energies. (a, b, c, d)
+    // The seven different form-factors are interpolated from the table.
+    // This is done based on centre of mass energy and angle (cos(theta)).
+
+    KFi = 1 ; // initial state electron
+    KFf = 15 ; // tau final state
+    Svar = s;
+    cosThetaD = cth;
+    IFGSW = 1;
+    IfPrint = 0; // Switch for printing debug information
+    KKdizet kkDizet;
+    kkDizet.ReadEWtabs();  // Read the EW tables from file
+    if(IFGSW==1) {
+        kkDizet.InterpoGSW(KFi, KFf, Svar, cosThetaD);
+        kkDizet.GetGSWxy(re, im);
+        std::transform(re, re + 7, im,  GSW, [](double r, double i) { return std::complex<double>(r, i); });
+        RhoEW         = GSW[1];
+        //VPgamma       = GSW[6];
+        VPgamma       = 1.0/(2.0- GSW[6]);
+        CorEle        = GSW[2];
+        CorFin        = GSW[3];
+        CorEleFin     = GSW[4];
+        sw2           = kkDizet.D_swsq;//0.23113; //sin^2(theta_W)
+        Gz_           = Gz_*Svar/(Mz_*Mz_); // Running width
+    } else {
+        RhoEW     = 1.0;
+        VPgamma   = 1.0;
+        CorEle    = 1.0;
+        CorFin    = 1.0;
+        CorEleFin = 1.0;
+        sw2       = 0.22351946; //sin(theta_w)^2 from  Eur.Phys.J. C (2019) 79, 480
+    }
+
+    K3      = CorEle;
+    K1      = CorEle;
+    K13     = CorEleFin;
+    K2      = CorEle;
+    K12     = CorEleFin;
+    K11     = CorEleFin;
+    Gammavp = VPgamma;
+    Rho11   = RhoEW;
+    Rho12   = RhoEW;
+    Rho13   = RhoEW;
+
+
+
     // QED loop corrections (optional)
     double ArQED = 0.0, AiQED = 0.0;
     double Ar1 = 0.0, Ai1 = 0.0;
-    if (iqed_==10) {
+    if (iqed_==10) { //  ! Warning: temporarily this contribution is blocked
         ArQED = -alpha_ * m * m / (pi_ * V * s) * log((1 + V) / (1 - V));
         AiQED = alpha_ * m * m / (V * s);
     }
@@ -54,7 +107,11 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
     double ReA1 = ArQED + ReA;
     double ImA1 = AiQED + ImA;
 
-    double Qi, Qf, ai, af, sw2, sw, cw2, cw, t, Fvivf;
+    sw  = sqrt(sw2);
+    cw2 = 1.0 - sw2;
+    cw  = sqrt(cw2);
+    // Mandelstam variables s and t (mass of tau is included in t). s is previously defined.
+    t   = pow(m,2) - 0.5 * s * (1.0 - V * cth)
 
     // std::cout<< "ReA1 = " << ReA1 << ", ImA1 = " << ImA1 << std::endl;
     // std::cout<< "ArQED = " << ArQED << ", AiQED = " << AiQED << std::endl;
@@ -83,9 +140,60 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
     double V2   = pow(V, 2);
     double cth2 = pow(cth, 2);
     double sth2 = pow(sth, 2);
-
+    double sw4  = pow(sw, 4);
 
     double denom = (16.0*gam4*m4+(Gz_2-8.0*gam2*m2)*Mz_2+Mz_4);
+
+    // Denominators of Z propagator with running width
+    Den = s - Mz_2 + std::complex<double>(0.0, 1.0) * Gz_ * Mz_;
+    // Constant for effective photon like couplings correction coming from Z boson
+    Fvivf = 4.0 * (f2/e2) * sw4; //! WARNING: the *sw**4 factor come from vector couplings numerators Fvivf
+    // Note: Fvivf can also be written as Fvivf= sw**2/cw**2, or through the constant G_mu:
+    // Fvivf= sqrt(2) *G_mu *Mz**2 *sw**4 /(pi*alpha)  This agrees with definition below.
+
+    // FINAL FERMION IS TAU LEPTON (f=lepton) with couplings:
+    Qf = -1.0;
+    vf = -0.03783;  //! from PDG, used in previous code (v0 coupling)
+    af = -0.50123;  //! from PDG, used in previous code (a0 coupling)
+    if(IFGSW==1) {
+        vf = -0.5 -2.0 * Qf * sw2 * K1;  // is function for lepton
+        af = -0.5;
+    }
+
+    // Couplings for Initial Fermions e, u or d
+    if(channel == 1) { // Leptons
+        Qi = -1.0;
+        vi = -0.03783;  //! from PDG, used in the previous code
+        ai = -0.50123;  //! from PDG, used in the previous code
+        // Effective Z propagator  (reduces to 1/Den without rad. corr.):
+        Pz = Rho11/Den;
+        if(IFGSW==1) {
+            vi = -0.5 -2.0 * Qi * sw2 * K1;  // is function for lepton
+            ai = -0.5;
+            Fvivf = GMu_ * Mz_2 / (alpha_ * sqrt(2.0) * 8.0*pi_) *
+                    (m_sw2*(1.0-m_sw2))*16.;
+            Fvivf = Fvivf * (m_sw2/(1.0-m_sw2)) //! why this factor? Because  vi ai couplings in KKMC
+                 // are divided by deno= 4 sqrt(m_swsq*(1d0-m_swsq)) in addition multiplied by 2 and we are not using it here
+                 // Ve = (2*T3e -4*Qe*m_swsq)/deno and Ae = 2*T3e/deno.
+        }
+        //Effective photon propagator with v_{if}-v_i*v_f correction to Z exchange
+        //  (NOTE: Pz reduces to 1/s if  rad. corr. are off):
+        Pg = Gammavp/s + (Fvivf * s/Den) * (Rho11*(K11-K1*K1));
+    } else if(channel == 2) {;}//up quark
+    else if(channel == 3) {;}//down quark
+    else{
+        Qi = 0.0;
+        vi = {0.0,0.0};
+        ai = 0.0;
+        Pz = {0.0,0.0};
+        Pg = {0.0,0.0};
+    }
+
+    // Complex magnetic and electric form-factors
+    A = std::complex<double>(ReA1, ImA1);
+    B = std::complex<double>(ReB, ImB);
+    X = std::complex<double>(ReX, ImX);
+    Y = std::complex<double>(ReY, ImY);
 
     // The complete translation for each RSM(i,j) and RDM(i,j)
 

@@ -9,11 +9,13 @@
 #include <TCutG.h>
 
 #include "AnomWt.h"
+#include "BornV.h"
 #include "HistManager.h"
 #include "EventInitilizers.h"
 #include "HepMCReader.h"
 #include "Observables.h"
 #include "PhysicsConstants.h"
+
 
 #include "HepMC3/ReaderAscii.h"
 #include "HepMC3/GenEvent.h"
@@ -74,6 +76,16 @@ int main(int argc, char** argv) {
     HepMC3::GenEvent evt;
     HepMCReader readEvent;
 
+    // Load all the dizet tables
+    std::cout << "Loading Dizet EW tables from directory: " << std::endl;
+    BornV bornV;
+    std::cout << "sizeof(BornV) = " << sizeof(BornV) << " bytes\n";
+    std::string dizetDir = "../dizet"; // Adjust path as needed
+
+    bornV.BornV_ReadAll(dizetDir);
+
+
+
    TCutG *cutgD = new TCutG("Diagonal_CUTG",6);
    cutgD->SetVarX("");
    cutgD->SetVarY("");
@@ -105,7 +117,7 @@ int main(int argc, char** argv) {
 
         bool selected = true;;
 
-        if(nevts > 10000000) break; // Limit to 100000 events
+        if(nevts > 1000) break; // Limit to 100000 events
         evtIn = {};
         if(nevts<printEvts){std::cout<< "\n"<< "Evt number: "<<nevts<<std::endl;}
         if(nevts%1000000==0){std::cout<< "\n"<< "Evt number: "<<nevts<<std::endl;}
