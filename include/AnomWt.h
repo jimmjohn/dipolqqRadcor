@@ -6,6 +6,7 @@
 #include <iostream>
 #include "KinLib.h"
 #include "DipoleEERij.h"
+#include "DipoleQQRijRadCor.h"
 #include "EventInitilizers.h"
 #include <TVector3.h>
 #include <TRandom3.h>

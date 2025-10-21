@@ -1,6 +1,7 @@
 #include "AnomWt.h"
 #include "PhysicsConstants.h"
 
+
 void AnomWt::compute() {
   // 1) Build the tau‐pair rest frame
   std::array<double,4> QQ, PB1{0,0,0,1}, PB2{0,0,0,1}, PBB ;
@@ -79,9 +80,9 @@ void AnomWt::compute() {
   double theta1 =  acos(PB1[3] /std::sqrt(PB1[1] * PB1[1] + PB1[2] * PB1[2] + PB1[3] * PB1[3]));
   double theta2 =  acos(-PB2[3] /std::sqrt(PB2[1] * PB2[1] + PB2[2] * PB2[2] + PB2[3] * PB2[3]));
   // Calculation of Asymmetry factor fromm theory
-  DipoleEERij probablity_calc(0);
-  auto Rtt1 = probablity_calc.calculate(E, acos(0.5), 0., 0., 0., 0., 0., 0., 0., 0.);
-  auto Rtt2 = probablity_calc.calculate(E, acos(-0.5), 0., 0., 0., 0., 0., 0., 0., 0.);
+  DipoleQQRijRadCor probablity_calc(0);
+  auto Rtt1 = probablity_calc.calculate(E, acos(0.5), 0., 0., 0., 0., 0., 0., 0., 0., 1.0);
+  auto Rtt2 = probablity_calc.calculate(E, acos(-0.5), 0., 0., 0., 0., 0., 0., 0., 0., 1.0);
   A =  (5.0/2.0)*(Rtt1[3][3]-Rtt2[3][3])/(Rtt1[3][3]+Rtt2[3][3]);
   // New probabilities to Mustraal is added by Z. Was ---> inroduction of mass term effect and FBasymmetry.
   double T1 = PB1[0] * PB1[0] * (1.0 + cos(theta1) * cos(theta1)+ pow(Physics::m_tau,2)/(P1[0]*P1[0])*sin(theta1)*sin(theta1)+ A*cos(theta1));
@@ -150,12 +151,12 @@ void AnomWt::compute() {
   ReY = 0.0; ImY = 0.0;
 
   // baseline (no loops)
-  DipoleEERij dipole_calculator1(0);
-  auto R0 = dipole_calculator1.calculate(E, m_theta, ReA, ImA, ReB, ImB, ReX, ImX, ReY, ImY);
+  DipoleQQRijRadCor dipole_calculator1(0);
+  auto R0 = dipole_calculator1.calculate(E, m_theta, ReA, ImA, ReB, ImB, ReX, ImX, ReY, ImY, 1.0);
 
   // with anomalous couplings & loops
-  DipoleEERij dipole_calculator2(1);
-  auto R = dipole_calculator2.calculate(E, m_theta, Ar0, Ai0, Br0, Bi0, Ar0, Ai0, Br0, Bi0);
+  DipoleQQRijRadCor dipole_calculator2(1);
+  auto R = dipole_calculator2.calculate(E, m_theta, Ar0, Ai0, Br0, Bi0, Ar0, Ai0, Br0, Bi0, 1.0);
 
   // 10) Extract weights
   m_wtME    = R[3][3] / R0[3][3];

@@ -21,6 +21,11 @@ typedef complex<double> dcmplx;
 //________________________________________________________________________
 class KKdizet {
  public:
+ // === Singleton access ===
+  static KKdizet& instance() {
+    static KKdizet self;   // single global instance (creation is once per process)
+    return self;
+  }
  ofstream *m_Out;     //! pointer to external Logfile for messages
 // class member data
  public:

@@ -21,6 +21,8 @@
 #include "HepMC3/GenEvent.h"
 
 #include "DipoleEERij.h"
+#include "DipoleQQRijRadCor.h"
+#include "KKdizet.h"
 
 
 
@@ -110,6 +112,8 @@ int main(int argc, char** argv) {
    cutgH->SetPoint(4,1.20029,1.06771);
    cutgH->SetPoint(5,1.20029,1.06771);
 
+    KKdizet::instance().ReadEWtabs();  // Read the EW tables from file
+
 
     while (reader.read_event(evt)) {
         if (reader.failed()) break;
@@ -117,10 +121,10 @@ int main(int argc, char** argv) {
 
         bool selected = true;;
 
-        if(nevts > 1000) break; // Limit to 100000 events
+        if(nevts > 10000000) break; // Limit to 100000 events
         evtIn = {};
         if(nevts<printEvts){std::cout<< "\n"<< "Evt number: "<<nevts<<std::endl;}
-        if(nevts%1000000==0){std::cout<< "\n"<< "Evt number: "<<nevts<<std::endl;}
+        if(nevts%10000==0){std::cout<< "\n"<< "Evt number: "<<nevts<<std::endl;}
         nevts++;
 
         readEvent.ReadAndFillEvent(evtIn, evt);
@@ -298,8 +302,8 @@ int main(int argc, char** argv) {
         ba++;
         double energy = beamEnergy/2.0;
         double theta = std::acos(costheta);
-        DipoleEERij dipole_calculator3(0);
-        auto RMat = dipole_calculator3.calculate(energy, theta, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        DipoleQQRijRadCor dipole_calculator3(0);
+        auto RMat = dipole_calculator3.calculate(energy, theta, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
         double Rtt_theory = RMat[3][3];   // no arbitrary factor
         histSave->Rtt->SetPoint(ba, costheta, Rtt_theory);
     }
