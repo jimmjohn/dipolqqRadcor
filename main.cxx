@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
 
         bool selected = true;;
 
-        if(nevts > 10000000) break; // Limit to 100000 events
+        if(nevts > 10000000) break; // Limit to 1000000 events
         evtIn = {};
         if(nevts<printEvts){std::cout<< "\n"<< "Evt number: "<<nevts<<std::endl;}
         if(nevts%10000==0){std::cout<< "\n"<< "Evt number: "<<nevts<<std::endl;}
@@ -307,6 +307,28 @@ int main(int argc, char** argv) {
         double Rtt_theory = RMat[3][3];   // no arbitrary factor
         histSave->Rtt->SetPoint(ba, costheta, Rtt_theory);
     }
+
+    // std::cout << std::scientific << std::uppercase << std::setprecision(15);
+    // // Two scientific columns similar to Fortran
+    // const int idxw = 2;   // width for indices
+    // const int colw = 23;  // width for numbers (tweak if you want tighter/wider)
+
+
+    // std::cout<<"Jim Compare the values for E = 5.0 and theta = 0.5" <<std::endl;
+    // double thetaX = 3.14159265358979323846/3.0;
+    // DipoleQQRijRadCor dipole_calculator4(1);
+    // auto RMat = dipole_calculator4.calculate(5.0, thetaX, 0.04, 0.0, 0.0, 0.0, 0.04, 0.0, 0.0, 0.0, 1.0);
+
+    // DipoleQQRijRadCor dipole_calculator5(1);
+    // auto R0Mat = dipole_calculator5.calculate(5.0, thetaX, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+
+    // for (int i = 1; i <= 4; ++i) {
+    //     for (int j = 1; j <= 4; ++j) {
+    //         std::cout << "R[" << setw(idxw) << i << "][" << setw(idxw) << j << "] = "
+    //                   << setw(colw) << RMat[i-1][j-1] << " " << setw(colw) << R0Mat[i-1][j-1] << '\n';
+    //     }
+    // }
+
 
     histSave->ratio_angle1 = (TH1D*)histSave->h_angle1->Clone("ratio_angle1");
     histSave->ratio_angle1->Divide(histSave->h_angle_01);

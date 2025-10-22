@@ -65,14 +65,18 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
         KKdizet::instance().InterpoGSW(KFi, KFf, Svar, CosThetaD);
         KKdizet::instance().GetGSWxy(re, im);
         std::transform(re, re + 7, im,  GSW, [](double r, double i) { return std::complex<double>(r, i); });
-        RhoEW         = GSW[1];
-        //VPgamma       = GSW[6];
-        VPgamma       = 1.0/(2.0- GSW[6]);
-        CorEle        = GSW[2];
-        CorFin        = GSW[3];
-        CorEleFin     = GSW[4];
+        RhoEW         = GSW[0];
+        //VPgamma       = GSW[5];
+        VPgamma       = 1.0/(2.0- GSW[5]);
+        CorEle        = GSW[1];
+        CorFin        = GSW[2];
+        CorEleFin     = GSW[3];
         sw2           = KKdizet::instance().D_swsq;//0.23113; //sin^2(theta_W)
         Gz_           = Gz_*Svar/(Mz_*Mz_); // Running width
+        // std::cout << "GSW[0] = " << GSW[0] << ", GSW[1] = " << GSW[1] << std::endl;
+        // std::cout << "GSW[2] = " << GSW[2] << ", GSW[3] = " << GSW[3] << std::endl;
+        // std::cout << "GSW[4] = " << GSW[4] << ", GSW[5] = " << GSW[5] << std::endl;
+        // std::cout << "GSW[6] = " << GSW[6] << std::endl;
     } else {
         RhoEW     = 1.0;
         VPgamma   = 1.0;
@@ -180,7 +184,7 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
         }
         //Effective photon propagator with v_{if}-v_i*v_f correction to Z exchange
         //  (NOTE: Pz reduces to 1/s if  rad. corr. are off):
-        Pg = Gammavp/s + (Fvivf * s/Den) * (Rho11*(K11-K1*K1));
+        Pg = 1.0/s*(Gammavp + (Fvivf * s/Den) * (Rho11*(K11-K1*K1)));
     } else if(channel == 2) {;}//up quark
     else if(channel == 3) {;}//down quark
     else{
@@ -215,6 +219,29 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
     std::complex<double> aiC = std::conj(ai);
     std::complex<double> vfC = std::conj(vf);
 
+    // //Print things out for debugging
+    // std::cout << "----------------------------------------" << std::endl;
+    // std::cout << "Denominator: " << Den << std::endl;
+    // std::cout << "Pg: " << Pg << ", Pz: " << Pz << std::endl;
+    // std::cout << "V:" << V << std::endl;
+    // std::cout << "Vi: " << vi << ", Ai: " << ai << std::endl;
+    // std::cout << "Vf: " << vf << ", Af: " << af << std::endl;
+    // std::cout << "Qi: " << Qi << ", Qf: " << Qf << std::endl;
+    // std::cout << "A: " << A << ", B: " << B << ", X: " << X << ", Y: " << Y << std::endl;
+    // std::cout << "Fvivf: " << Fvivf << std::endl;
+    // std::cout << "Svar: " << Svar << std::endl;
+    // std::cout << "t: " << t << std::endl;
+    // std::cout << "s: " << s << std::endl;
+    // std::cout << "theta: " << theta << std::endl;
+    // std::cout << "cth: " << cth << ", sth: " << sth << std::endl;
+    // std::cout << "gam: " << gam << std::endl;
+    // std::cout << "m: " << m << std::endl;
+    // std::cout << "e: " << e << ", f: " << f << std::endl;
+    // std::cout << "sw2: " << sw2 << ", cw2: " << cw2 << std::endl;
+    // std::cout << "alpha: " << alpha_ << ", GMu: " << GMu_ << std::endl;
+    // std::cout << "Mz: " << Mz_ << ", Gz: " << Gz_ << std::endl;
+    // std::cout << "iqed: " << iqed_ << std::endl;
+    // std::cout << "----------------------------------------" << std::endl;
 
     RSM[0][0] = 4.0*gam2*m4 * std::real(e2*(1.0 + gam2)*Qf*Qi*
       ((e2*Pg*Qf*Qi + f2*Pz*vf*vi) * std::conj(Pg))
@@ -317,7 +344,7 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
     );
 
 
-    RSM[0][3] = -4.0 * f2 * (gam3) * m4 *
+    RSM[0][3] = -4.0 * f2 * gam3 * m4 *
     std::real( e2 * Pz * Qf * Qi * std::conj(Pg) *
         ( 2.0*ai*vf + af*V*vi*cth )
         + std::conj(Pz) * ( af*V *
@@ -898,8 +925,9 @@ std::array<std::array<double,4>,4> DipoleQQRijRadCor::calculate(
         )
     );
 
-
-
+    // std::cout<< "RSM03: " << RSM[0][3] << std::endl;
+    // std::cout<< "RDM03: " << RDM[0][3] << std::endl;
+    // std::cout<< "X+vf: " << X+vf << std::endl;
     // Combine RSM and RDM to form R
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
