@@ -454,8 +454,13 @@ void HistManager::DrawHistograms(double beamEnergy, double avg_m2OverE2, double 
     normalizeGraph(Rtt);
     //Rtt->Draw("P");  JJ enable this to see korching function
     //theta_dist_cs->GetYaxis()->SetRangeUser(0.35, 0.8); //For 42.32 GeV
-    theta_dist_cs->GetYaxis()->SetRangeUser(0.35, 0.65); //For 10.58 GeV
-    //theta_dist_cs->GetYaxis()->SetRangeUser(0.3, 0.9); //For 91.18 GeV
+    //theta_dist_cs->GetYaxis()->SetRangeUser(0.35, 0.65); //For 10.58 GeV
+    theta_dist_cs->GetYaxis()->SetRangeUser(0.0, 1.9); //For 91.18 GeV
+
+    std::cout << "Fit results: " << std::endl;
+    std::cout << "CS  <AFB> = " << f_model_cs->GetParameter(2) << " +/- " << f_model_cs->GetParError(2) << std::endl;
+    std::cout << "ME  <AFB> = " << f_model_ms->GetParameter(2) << " +/- " << f_model_ms->GetParError(2) << std::endl;
+    std::cout << "Kor <AFB> = " << avg_AFB << std::endl;
 
     TLatex tex17;
     tex17.SetTextSize(0.04);
@@ -470,7 +475,8 @@ void HistManager::DrawHistograms(double beamEnergy, double avg_m2OverE2, double 
     legend->SetBorderSize(0);
     legend->SetFillStyle(0);
     legend->SetTextSize(0.05);
-    legend->AddEntry(theta_dist_cs, "E_{#tau#tau} < 6 GeV", "");
+    //legend->AddEntry(theta_dist_cs, "E_{#tau#tau} < 50 GeV", "");
+    legend->AddEntry(theta_dist_cs, "No cut on E_{#tau#tau}", "");
     legend->AddEntry(theta_dist_cs, "Collins-Soper frame", "lp");  // l = line, p = marker
     legend->AddEntry(theta_dist_ms, "Mustraal frame",     "lp");
     legend->SetTextFont(42);   // nice readable font
@@ -675,11 +681,11 @@ void HistManager::DrawHistograms(double beamEnergy, double avg_m2OverE2, double 
     c22->Print(outFile);
     c22->Print(outFile + "]");  // close
 
-    c17->SaveAs("ThetaDistribution_10_58.png");
-    c1->SaveAs("KKMCee_chiral_10_58_ISR_FSR.png");
-    c2->SaveAs("External_Chiral_10_58_ISR_FSR.png");
-    c3->SaveAs("KKMCee_WT_Correlation_10_58.png");
-    c12->SaveAs("External_WT_Correlation_10_58.png");
+    // c17->SaveAs("ThetaDistribution_10_58.png");
+    // c1->SaveAs("KKMCee_chiral_10_58_ISR_FSR.png");
+    // c2->SaveAs("External_Chiral_10_58_ISR_FSR.png");
+    // c3->SaveAs("KKMCee_WT_Correlation_10_58.png");
+    // c12->SaveAs("External_WT_Correlation_10_58.png");
 
     currentDir->cd();
 }

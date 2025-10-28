@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-SET( CMAKE_BUILD_TYPE Debug )
+SET( CMAKE_BUILD_TYPE Release )
 
 # Project name and language
 project(DipoleCalculation LANGUAGES CXX)

@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
     // int maxEvents = 1000000; // default Modify to parse from command line if needed
 
     const char* filename = theApp.Argv()[1];//argv[1] will not work as TApplication eats ROOT options (like -b, -q, etc.), and rewrites argc/argv
+    // filename = "hepmc_chiral_10_58_ISR_Z.out";
     std::ifstream infile(filename);
     std::cout << "============================================================\n";
     std::cout << "   Demo program associated with preprint:\n";
@@ -64,8 +65,11 @@ int main(int argc, char** argv) {
     int printEvts = 0;
     int countSelected = 0;
     double beamEnergy;
-    double invariantCut = 3.0; // GeV//10.58 GeV
+    //double invariantCut = 3.0; // GeV//10.58 GeV
+    //double invariantCut = 12;   // GeV//42.32 GeV
+    //double invariantCut = 21;   // GeV// 74.06 GeV
     //double invariantCut = 25.0; // GeV//91.18 GeV
+    double invariantCut = 92; // GeV// For Checking Ananya issue
     double sum_m2OverE2CS = 0.0;
     double sum_AFB= 0.0;
 
@@ -114,17 +118,16 @@ int main(int argc, char** argv) {
 
     KKdizet::instance().ReadEWtabs();  // Read the EW tables from file
 
-
     while (reader.read_event(evt)) {
         if (reader.failed()) break;
         // Skip empty lines
 
-        bool selected = true;;
+        bool selected = true;
 
-        if(nevts > 10000000) break; // Limit to 1000000 events
+        if(nevts > 1000000) break; // Limit to 1000000 events
         evtIn = {};
         if(nevts<printEvts){std::cout<< "\n"<< "Evt number: "<<nevts<<std::endl;}
-        if(nevts%10000==0){std::cout<< "\n"<< "Evt number: "<<nevts<<std::endl;}
+        if(nevts%100000==0){std::cout<< "\n"<< "Evt number: "<<nevts<<std::endl;}
         nevts++;
 
         readEvent.ReadAndFillEvent(evtIn, evt);
